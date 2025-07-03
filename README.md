@@ -1,30 +1,29 @@
 # BSc-Thesis-Code
-Code for 'Tail risk spillovers between economic sectors and their implications for asset pricing' by Yusif Ismailov
 
-This repository contains the Python scripts used for the analysis in the thesis.
+This repository contains the Python scripts used for the thesis: 'Tail risk spillovers between economic sectors and their implications for asset pricing' by Yusif Ismailov
 
 ## Data Requirements
 
-To run the code, you will first need to obtain the required data files. Most of the necessary data can be sourced from Wharton Research Data Services (WRDS), specifically from the CRSP and Fama-French libraries.
+To run the code, you will first need to obtain the required data files.
 
-The following files are required external inputs:
-*   `stock_data.csv`: Daily stock data from the CRSP database.
-*   `market_return_daily.csv`: Daily market return data from the CRSP database.
-*   `ff3_daily.csv` & `ff3_monthly.csv`: Daily and monthly Fama-French factor data from the Kenneth French Data Library (available via WRDS).
-*   `liq_factor.csv`: Monthly Pástor-Stambaugh liquidity factor data (available on WRDS).
-*   `Goyal-Welch.csv`: Monthly predictor variables, which must be downloaded from [Amit Goyal's website](https://sites.google.com/view/agoyal145).
+Required files:
+*   `stock_data.csv`: Daily stock data from CRSP.
+*   `market_return_daily.csv`: Daily value-weighted market return data from CRSP.
+*   `ff3_daily.csv` & `ff3_monthly.csv`: Daily and monthly Fama-French factor data from WRDS (including momentum factor).
+*   `liq_factor.csv`: Monthly Psstor-Stambaugh liquidity factor data from WRDS.
+*   `Goyal-Welch.csv`: Monthly predictor data, which can be downloaded from [Amit Goyal's website](https://sites.google.com/view/agoyal145).
 
-For more specific details on variable names and data processing, please refer to the data section of the thesis.
+For more details on the data and processing, please refer to the data section of the thesis.
 
 ## Code Execution Order
 
-The scripts are designed to be run sequentially to generate all results from scratch. The following order is recommended for a full replication.
+The scripts are designed to be run sequentially to generate all results. The following order is recommended for a full replication.
 
-Note that the header of each `.py` file contains a detailed description of its purpose and required input files. This allows for more flexible execution if you only wish to reproduce specific parts of the analysis without running the entire pipeline.
+The header of each `.py` file contains a description of its purpose and required input files if you don't want to run everything.
 
 ### Part 1: Replication of Kelly and Jiang (2014)
 
-This part focuses on replicating the core findings related to the aggregate tail risk measure.
+This part replicates the figures and tables related to the tail risk metric. 
 
 1.  `data_prep.py`
 2.  `process_market_data.py`
@@ -35,7 +34,7 @@ This part focuses on replicating the core findings related to the aggregate tail
 
 ### Part 2: Sector Analysis Extension
 
-This part extends the analysis to the sector level, calculating sector-specific tail risk, spillovers, and asset pricing factors.
+This part extends the analysis to sector-level spillovers in tail risk.
 
 1.  `sector_data_prep.py`
 2.  `sector_lambda.py`
@@ -48,6 +47,6 @@ This part extends the analysis to the sector level, calculating sector-specific 
 
 ### Part 3: Predictive Regressions
 
-This final part uses outputs generated in both Part 1 and Part 2 to run the market return predictability regressions.
+This part uses outputs from both Part 1 and Part 2 to run regressions on future market returns. 
 
 1.  `sector_predictive_regressions.py`
