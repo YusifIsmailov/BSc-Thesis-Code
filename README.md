@@ -4,22 +4,22 @@ This repository contains the Python scripts used for the thesis: 'Tail risk spil
 
 ## Data Requirements
 
-To run the code, you will first need to obtain the required data files.
+To run the code, you need to obtain the required data files.
 
 Required files:
 *   `stock_data.csv`: Daily stock data from CRSP.
 *   `market_return_daily.csv`: Daily value-weighted market return data from CRSP.
 *   `ff3_daily.csv` & `ff3_monthly.csv`: Daily and monthly Fama-French factor data from WRDS (including momentum factor).
-*   `liq_factor.csv`: Monthly Psstor-Stambaugh liquidity factor data from WRDS.
+*   `liq_factor.csv`: Monthly Pastor-Stambaugh liquidity factor data from WRDS.
 *   `Goyal-Welch.csv`: Monthly predictor data, which can be downloaded from [Amit Goyal's website](https://sites.google.com/view/agoyal145).
 
-For more details on the data and processing, please refer to the data section of the thesis.
+For more details on the data and processing, please refer to the thesis.
 
 ## Code Execution Order
 
-The scripts are designed to be run sequentially to generate all results. The following order is recommended for a full replication.
+The scripts are designed to be run sequentially to generate all results. The following order is recommended. 
 
-The header of each `.py` file contains a description of its purpose and required input files if you don't want to run everything.
+The header of each file contains a description of what it does and the required input files. Refer to that if you don't want to run everything. 
 
 ### Part 1: Replication of Kelly and Jiang (2014)
 
@@ -49,4 +49,4 @@ This part extends the analysis to sector-level spillovers in tail risk.
 
 This part uses outputs from both Part 1 and Part 2 to run regressions on future market returns. 
 
-1.  `sector_predictive_regressions.py`
+1.  `predictive_regressions.py`
