@@ -1,4 +1,4 @@
-# BSc-Thesis-Code
+# BSc Thesis Code
 
 This repository contains the Python scripts used for the thesis: 'Tail risk spillovers between economic sectors and their implications for asset pricing' by Yusif Ismailov
 
