@@ -1,4 +1,4 @@
-# Replicates table 4 from Kelly and Jiang. First calculates stock-specific sensitivities to tail risk (beta) 
+# Replicates table 4 from Kelly and Jiang. First calculates stock-specific sensitivities to tail risk (beta)
 # and then creates portfolios based on ranking those betas. Analysis can be run for a specific start and end date. 
 # Contains the option to not rerun the beta calculation if you've already ran it once, since this is the most time consuming part. 
 # Also saves the returns of the high-minus-low tail risk portfolio to csv to be used in later analysis. 
@@ -58,7 +58,7 @@ def form_portfolios(holding_period, weighting_scheme):
         # Merge with financials and apply price filter
         financials = stock_data[stock_data['date'] == form_date]
         eligible_stocks = pd.merge(betas_at_date, financials, on='PERMNO', how='inner')
-        eligible_stocks = eligible_stocks[eligible_stocks['price_at_formation'].abs() >= 5].copy()
+        eligible_stocks = eligible_stocks[eligible_stocks['last_price'].abs() >= 5].copy()
 
         # Create quintiles
         eligible_stocks['quintile'] = pd.qcut(eligible_stocks['beta'].rank(method='first'), 5, labels=False, duplicates='drop') + 1
@@ -67,15 +67,15 @@ def form_portfolios(holding_period, weighting_scheme):
         for h in range(1, holding_period + 1):
             return_date = form_date + pd.DateOffset(months=h)
             future_returns_all = stock_data[stock_data['date'] == return_date]
-            quintile_returns = pd.merge(eligible_stocks[['PERMNO', 'quintile', 'mcap_at_formation']],
+            quintile_returns = pd.merge(eligible_stocks[['PERMNO', 'quintile', 'last_value']],
                                         future_returns_all[['PERMNO', 'RET_monthly']], on='PERMNO')
             if quintile_returns.empty: 
                 continue
             if weighting_scheme == 'ew':
                 monthly_returns = quintile_returns.groupby('quintile')['RET_monthly'].mean()
             elif weighting_scheme == 'vw':
-                monthly_returns = quintile_returns.groupby('quintile')[['RET_monthly', 'mcap_at_formation']].apply(
-                    lambda x: np.average(x['RET_monthly'], weights=x['mcap_at_formation']))
+                monthly_returns = quintile_returns.groupby('quintile')[['RET_monthly', 'last_value']].apply(
+                    lambda x: np.average(x['RET_monthly'], weights=x['last_value']))
             for q, ret in monthly_returns.items():
                 portfolio_returns.append({'formation_cohort': form_date, 'quintile': q, 'return_date': return_date, 'portfolio_return': ret})
     return pd.DataFrame(portfolio_returns)
@@ -197,9 +197,6 @@ for weighting in ['ew', 'vw']:
     portfolio_returns_12m = portfolio_returns_12m.groupby(['return_date', 'quintile'])['portfolio_return'].mean().reset_index().rename(columns={'return_date':'date'})
     # Calculate performance metrics
     panel_a_results = analyze_portfolio_performance(portfolio_returns_12m, newey_west_lags=12)
-    # Print results
-    print(f"Panel A Results (12-month holding, {weighting})")
-    print(panel_a_results.to_string(float_format="%.2f"))
     # Save to csv
     panel_a_results.to_csv(f"table4_12m_{weighting}.csv")
 
@@ -211,9 +208,6 @@ for weighting in ['ew', 'vw']:
     portfolio_returns_1m = portfolio_returns_1m.rename(columns={'return_date':'date'})
     # Calculate performance metrics
     panel_b_results = analyze_portfolio_performance(portfolio_returns_1m, newey_west_lags=1)
-    # Print results
-    print(f"Panel B Results (1-month holding, {weighting})")
-    print(panel_b_results.to_string(float_format="%.2f"))
     # Save to csv
     panel_b_results.to_csv(f"table4_1m_{weighting}.csv")
 

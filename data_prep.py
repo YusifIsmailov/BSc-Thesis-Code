@@ -2,7 +2,7 @@
 # Note that this takes a long time and a lot of RAM to run.
 #
 # Required files:
-#   -'wrds_data.csv' contains daily stock data from CRSP with required columns: PERMNO, date, PRC, RET, SHROUT. 
+#   -'stock_data.csv' contains daily stock data from CRSP with required columns: PERMNO, date, PRC, RET, SHROUT. 
 #   -'ff3_daily.csv' contains daily data for FF3 factors (mktrf, smb, hml), the momentum factor (umd) and the risk-free rate (rf). 
 
 import pandas as pd
@@ -19,7 +19,7 @@ dtypes = {
 }
 
 # Load stock data
-df = pd.read_csv('wrds_data.csv', usecols=list(dtypes.keys()), dtype=dtypes)
+df = pd.read_csv('stock_data.csv', usecols=list(dtypes.keys()), dtype=dtypes)
 df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
 df['RET'] = pd.to_numeric(df['RET'], errors='coerce')
 
@@ -46,7 +46,7 @@ ff_data['date'] = pd.to_datetime(ff_data['date'], format='%d/%m/%Y')
 ff_data.dropna(subset=['rf', 'mktrf', 'smb', 'hml'], inplace=True)
 ff_data.set_index('date', inplace=True)
 
-# Calculate daily FF3 Residuals for each stock
+# Calculate daily FF3 Residuals for each stock using monthly regressions
 i = 0
 def get_ff3_residuals(monthly_stock_data):
     global i
@@ -61,14 +61,10 @@ def get_ff3_residuals(monthly_stock_data):
         right_index=True,
         how='left'
     )
-
-    ff_factor_cols = ['mktrf', 'smb', 'hml']
-
-    regression_input_cols = ['RET', 'rf'] + ff_factor_cols
-    merged_month_data.dropna(subset=regression_input_cols, inplace=True)
+    merged_month_data.dropna(subset=['mktrf', 'smb', 'hml', 'RET', 'rf'], inplace=True)
 
     Y = merged_month_data['RET'] - merged_month_data['rf']
-    X = merged_month_data[ff_factor_cols]
+    X = merged_month_data[['mktrf', 'smb', 'hml']]
     X = sm.add_constant(X)
 
     model = sm.OLS(Y, X).fit()

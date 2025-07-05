@@ -5,7 +5,6 @@
 #   -'net_spillovers.csv' file created by 'sector_spillovers.py'
 
 import pandas as pd
-import numpy as np
 
 # Load monthly sector returns
 sector_returns = pd.read_csv("monthly_sector_returns.csv", index_col='date', parse_dates=True)
@@ -28,7 +27,7 @@ for form_date in net_spillovers.index:
     # We use next months return for this month's spillover metrics
     return_date = form_date + pd.DateOffset(months=1)
 
-    # Skip if there's no data
+    # Skip if there's no data. Only happens on the last formation date
     if return_date not in sector_returns.index:
         continue
 

@@ -13,7 +13,6 @@ from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
 import optuna
 import warnings
-import os
 
 # Config
 WINDOW_SIZE = 120           # rolling window size in months
@@ -31,7 +30,7 @@ def prepare_var_data(data, lags):
     return np.array(X), np.array(Y)
 
 # Calculates moving average coefficients from standard form VAR coefficients
-def get_ma_representation(var_coefs, forecast_horizon, num_vars):
+def calculate_ma(var_coefs, forecast_horizon, num_vars):
     p = var_coefs.shape[0] # number of lags
     # Shape of MA matrix
     ma_coefs = np.zeros((forecast_horizon + 1, num_vars, num_vars))
@@ -47,11 +46,11 @@ def get_ma_representation(var_coefs, forecast_horizon, num_vars):
 def calculate_gfevd(var_coefs, residuals, forecast_horizon, var_names):
     num_vars = len(var_names)
     # Get MA coefficients from standard VAR coefficients
-    ma_coefs = get_ma_representation(var_coefs, forecast_horizon, num_vars)
+    ma_coefs = calculate_ma(var_coefs, forecast_horizon, num_vars)
     # Estimated variance matrix
     sigma = np.cov(residuals, rowvar=False)
 
-    # GVEFD formula from Peseran
+    # GVEFD formula from Pesaran
     gfevd_unnormalized = np.zeros((num_vars, num_vars))
     for i in range(num_vars):
         e_i = np.zeros(num_vars)
@@ -60,16 +59,17 @@ def calculate_gfevd(var_coefs, residuals, forecast_horizon, var_names):
             e_j = np.zeros(num_vars)
             e_j[j] = 1.0
             numerator_ij = 0
+            denominator_ij = 0
             for h in range(forecast_horizon + 1):
-                term = np.dot(e_i, np.dot(ma_coefs[h], np.dot(sigma, e_j)))
-                numerator_ij += term**2
-            gfevd_unnormalized[i, j] = numerator_ij / sigma.diagonal()[j]
+                numerator_term = np.dot(e_i, np.dot(ma_coefs[h], np.dot(sigma, e_j)))
+                numerator_ij += numerator_term**2
+                
+                denominator_term = np.dot(e_i, np.dot(ma_coefs[h], np.dot(sigma, np.dot(ma_coefs[h], e_i))))
+                denominator_ij += denominator_term
+            gfevd_unnormalized[i, j] = (numerator_ij / sigma.diagonal()[j]) / denominator_ij
 
     # normalize the GFEVD table
     pairwise_spillover = gfevd_unnormalized / gfevd_unnormalized.sum(axis=1, keepdims=True)
-    # with np.errstate(divide='ignore', invalid='ignore'):
-    #     pairwise_spillover = gfevd_unnormalized / gfevd_unnormalized.sum(axis=1, keepdims=True)
-    # pairwise_spillover[np.isnan(pairwise_spillover)] = 0
 
     # 'to' and 'from' spillovers are row and column sums without the diagonals 
     spillovers_to = (pairwise_spillover.sum(axis=1) - np.diag(pairwise_spillover)) * 100
@@ -86,13 +86,9 @@ def calculate_gfevd(var_coefs, residuals, forecast_horizon, var_names):
     }
 
 # Function to select best lag order for VAR, while ensuring it's at least 0. 
-def find_best_lag_auto(data):
+def find_best_lag(data):
     model = VAR(data)
-    try:
-        results = model.select_order(maxlags=5)
-        best_lag = getattr(results, 'bic')
-    except Exception:
-        best_lag = 1
+    best_lag = model.select_order(maxlags=5).bic
     return best_lag if best_lag > 0 else 1
 
 # Load data
@@ -128,7 +124,7 @@ for i, end_date in enumerate(analysis_dates):
         print(f"Processing window {i + 1}/{len(analysis_dates)}")
     
     # Find best lag order
-    best_lag = find_best_lag_auto(window_data)
+    best_lag = find_best_lag(window_data)
 
     # Define the objective function to tune the Lasso hyperparameter
     def objective(trial):
@@ -156,7 +152,7 @@ for i, end_date in enumerate(analysis_dates):
 
     # Run Optuna
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=25, n_jobs=-1)
+    study.optimize(objective, n_trials=100, n_jobs=-1)
     best_alpha = study.best_params['alpha']
 
     # Fit final model full window and best alpha

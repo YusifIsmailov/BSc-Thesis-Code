@@ -20,7 +20,7 @@ gmr_df = pd.read_csv("gmr_factor.csv", index_col='date', parse_dates=True)
 gmr_df.index = gmr_df.index + pd.offsets.MonthEnd(0)
 
 # Load FF4 data
-dtypes = { 'dateff': 'str', 'mktrf': 'float32', 'smb': 'float32', 'hml': 'float32', 'rf': 'float32', 'umd': 'float32' }
+dtypes = {'dateff': 'str', 'mktrf': 'float32', 'smb': 'float32', 'hml': 'float32', 'rf': 'float32', 'umd': 'float32' }
 ff_df = pd.read_csv("ff3_monthly.csv", usecols=list(dtypes.keys()), dtype=dtypes)
 ff_df.rename(columns={'dateff': 'date'}, inplace=True)
 ff_df['date'] = pd.to_datetime(ff_df['date'], format='%d/%m/%Y') + pd.offsets.MonthEnd(0)
@@ -70,4 +70,4 @@ models_to_run = {
 for name, factors in models_to_run.items():
     X = sm.add_constant(X_data[factors])
     model = sm.OLS(Y, X).fit(cov_type='HAC', cov_kwds={'maxlags': 12})
-    print(f"{name:<45} Alpha: {model.params['const']:5.2f}% (t-stat: {model.tvalues['const']:5.2f})")
+    print(f"{name} Alpha: {model.params['const']:.2f}% (t-stat: {model.tvalues['const']:.2f})")

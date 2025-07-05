@@ -5,7 +5,6 @@
 #   -'cleaned_stock_data_returns.csv' file created by 'data_prep.py' 
 
 import pandas as pd
-import numpy as np
 
 # Specifying types saves a lot of RAM
 dtypes = {
@@ -30,12 +29,12 @@ def process_monthly_group(group):
     # Get final price and value of the stock that month
     last_day = group.iloc[-1]
     price = last_day['PRC']
-    mcap = last_day['value']
+    value = last_day['value']
 
     return pd.Series({
         'RET_monthly': monthly_ret,
-        'price_at_formation': price,
-        'mcap_at_formation': mcap
+        'last_price': price,
+        'last_value': value
     })
 
 # Group data by stock and by month and then and apply the function to each group

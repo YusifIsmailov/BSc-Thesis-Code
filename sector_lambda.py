@@ -57,7 +57,6 @@ def process_sector_lambdas():
     final_df_long['date'] = final_df_long['year_month'].dt.to_timestamp()
     
     final_pivot_df = final_df_long.pivot(index='date', columns='sector_name', values='lambda')
-    final_pivot_df.dropna(axis=1, how='all', inplace=True)
     final_pivot_df.dropna(axis=0, how='any', inplace=True)
     
     return final_pivot_df
@@ -65,10 +64,8 @@ def process_sector_lambdas():
 ff5_lambda = process_sector_lambdas()
 
 # Plots
-print("\n--- Generating Plot for Sector Tail Risk ---")
-
 # Full sector names for legend
-legend_name_map = {
+sector_name_map = {
     'Cnsmr': 'Consumer',
     'HiTec': 'High-Tech',
     'Hlth': 'Healthcare',
@@ -92,7 +89,7 @@ recession_periods = [
 fig, ax = plt.subplots(figsize=(14, 8))
 
 for sector in ff5_lambda.columns:
-    ax.plot(ff5_lambda.index, ff5_lambda[sector], label=legend_name_map.get(sector))
+    ax.plot(ff5_lambda.index, ff5_lambda[sector], label=sector_name_map.get(sector))
 
 # Add recession shading
 for start, end in recession_periods:
@@ -115,7 +112,6 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 plt.savefig("ff5_sector_lambda_ff3.png")
 plt.close()
-print(f"Plot saved to ff5_sector_lambda_ff3.png")
 
 # Save data
 ff5_lambda.index.name = 'date'

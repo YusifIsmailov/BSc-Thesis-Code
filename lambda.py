@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import statsmodels.api as sm
 
 # Set which tail risk metric you want to use
 use_ff3 = True 
@@ -184,4 +183,3 @@ print(f"Saved lambda_unstandardized_with_ci{suffix}.png")
 
 # Save tail risk metrics
 lambda_df.to_csv('lambda_estimates.csv', index=False)
-print("Saved lambda_estimates.csv")

@@ -16,7 +16,6 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-import os
 
 # Configuration
 RECALCULATE_METRICS = True
@@ -83,14 +82,14 @@ def calculate_dbeta_coskew():
     return dbeta_coskew_df
 
 # Form double-sorted portfolios and calculate their returns
-def form_portfolios(all_data, holding_period, weighting_scheme, secondary_metric_col):
+def form_portfolios(all_data, holding_period, weighting_scheme, secondary_col):
     all_portfolio_monthly_returns = []
     
     for form_date in sorted(all_data['formation_date'].unique()):
         eligible_stocks = all_data[all_data['formation_date'] == form_date].copy()
         # Create quartiles
         eligible_stocks['beta_quartile'] = pd.qcut(eligible_stocks['beta'].rank(method='first'), 4, labels=False, duplicates='drop') + 1
-        eligible_stocks['secondary_quartile'] = pd.qcut(eligible_stocks[secondary_metric_col].rank(method='first'), 4, labels=False, duplicates='drop') + 1
+        eligible_stocks['secondary_quartile'] = pd.qcut(eligible_stocks[secondary_col].rank(method='first'), 4, labels=False, duplicates='drop') + 1
         
         # Loop through high and low beta quartiles and all secondary quartiles
         for bq in [1, 4]:
@@ -107,8 +106,8 @@ def form_portfolios(all_data, holding_period, weighting_scheme, secondary_metric
                     if weighting_scheme == 'ew':
                         portfolio_return = future_returns['RET_monthly'].mean()
                     elif weighting_scheme == 'vw':
-                        merged_for_vw = pd.merge(future_returns, portfolio_stocks[['PERMNO', 'mcap_at_formation']], on='PERMNO')
-                        portfolio_return = np.average(merged_for_vw['RET_monthly'], weights=merged_for_vw['mcap_at_formation'])
+                        merged_for_vw = pd.merge(future_returns, portfolio_stocks[['PERMNO', 'last_value']], on='PERMNO')
+                        portfolio_return = np.average(merged_for_vw['RET_monthly'], weights=merged_for_vw['last_value'])
                     
                     all_portfolio_monthly_returns.append({
                         'beta_q': bq, 'secondary_q': sq, 
@@ -158,7 +157,7 @@ def analyze_performance_double_sort(portfolio_returns):
 beta_df = pd.read_csv('tail_risk_betas.csv', dtype={'PERMNO': 'int32', 'beta': 'float32'})
 beta_df['formation_date'] = pd.to_datetime(beta_df['formation_date']) + pd.offsets.MonthEnd(0)
 
-stock_data = pd.read_csv("processed_monthly_stock_data.csv", usecols=['PERMNO', 'date', 'price_at_formation', 'RET_monthly', 'mcap_at_formation'])
+stock_data = pd.read_csv("processed_monthly_stock_data.csv", usecols=['PERMNO', 'date', 'last_price', 'RET_monthly', 'last_value'])
 stock_data['date'] = pd.to_datetime(stock_data['date'])
 
 ff_df = pd.read_csv("ff3_monthly.csv", usecols=['dateff', 'mktrf', 'smb', 'hml', 'rf', 'umd'])
@@ -194,41 +193,35 @@ idio_vol_df['formation_date'] = pd.to_datetime(idio_vol_df['formation_date'])
 dbeta_coskew_df['formation_date'] = pd.to_datetime(dbeta_coskew_df['formation_date'])
 
 # Prepare full dataframe will all relevant columns
-financials = stock_data[['PERMNO', 'date', 'price_at_formation', 'mcap_at_formation']].rename(columns={'date': 'formation_date'})
+financials = stock_data[['PERMNO', 'date', 'last_price', 'last_value']].rename(columns={'date': 'formation_date'})
 everything_df = pd.merge(beta_df, financials, on=['PERMNO', 'formation_date'], how='left')
 everything_df = pd.merge(everything_df, idio_vol_df, on=['PERMNO', 'formation_date'], how='left')
 everything_df = pd.merge(everything_df, dbeta_coskew_df, on=['PERMNO', 'formation_date'], how='left')
-everything_df.dropna(subset=['beta', 'price_at_formation'], inplace=True)
+everything_df.dropna(subset=['beta', 'last_price'], inplace=True)
 # Apply price filter
-everything_df = everything_df[abs(everything_df['price_at_formation']) >= 5]
-print(f"Complete dataset created with {len(everything_df):,} observations.")
+everything_df = everything_df[abs(everything_df['last_price']) >= 5]
 
 # Link names of characteristics with column names
 characteristics_setup = {
-    'A_Size': {'metric_col': 'mcap_at_formation'},
-    'B_IdioVol': {'metric_col': 'idio_vol'},
-    'C_DownsideBeta': {'metric_col': 'downside_beta'},
-    'D_Coskewness': {'metric_col': 'coskewness'}
+    'A_Size': {'col': 'last_value'},
+    'B_IdioVol': {'col': 'idio_vol'},
+    'C_DownsideBeta': {'col': 'downside_beta'},
+    'D_Coskewness': {'col': 'coskewness'}
 }
 
 for label, config in characteristics_setup.items():
-    secondary_metric_col = config['metric_col']
+    secondary_col = config['col']
     print(f"Processing Panel {label}")
 
     # Drop nan rows only where this specific metric doesn't exist
-    panel_data = everything_df.dropna(subset=[secondary_metric_col]).copy()
+    panel_data = everything_df.dropna(subset=[secondary_col]).copy()
 
     for weighting in ['ew', 'vw']:        
         # Calculate the monthly return for each portfolio 
-        portfolio_returns = form_portfolios(panel_data, 12, weighting, secondary_metric_col)
+        portfolio_returns = form_portfolios(panel_data, 12, weighting, secondary_col)
         # The reported monthly return is the average return of all portfolios active that month. 
         portfolios = portfolio_returns.groupby(['return_date', 'beta_q', 'secondary_q'])['portfolio_return'].mean().reset_index().rename(columns={'return_date': 'date'})
         # Calculate performance metrics
         performance = analyze_performance_double_sort(portfolios)
-        # Print results
-        print(f"Results for {weighting}:")
-        print(performance.to_string(float_format="%.2f"))
         # Save to csv
         performance.to_csv(f"table5_{label}_{weighting}.csv")
-
-print("\nScript finished.")

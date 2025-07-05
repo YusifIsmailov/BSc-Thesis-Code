@@ -2,11 +2,10 @@
 # Note that this takes a long time and a lot of RAM to run.
 #
 # Required files:
-#   -'wrds_data.csv' contains daily stock data from CRSP with required columns: PERMNO, date, PRC, RET, SHROUT. 
+#   -'stock_data.csv' contains daily stock data from CRSP with required columns: PERMNO, date, PRC, RET, SHROUT. 
 #   -'ff3_daily.csv' contains daily data for FF3 factors (mktrf, smb, hml), the momentum factor (umd) and the risk-free rate (rf). 
 
 import pandas as pd
-import numpy as np
 import statsmodels.api as sm
 
 # Specifying types saves a lot of RAM
@@ -20,7 +19,7 @@ dtypes = {
 }
 
 # Load stock data
-df = pd.read_csv('wrds_data.csv', usecols=list(dtypes.keys()), dtype=dtypes)
+df = pd.read_csv('stock_data.csv', usecols=list(dtypes.keys()), dtype=dtypes)
 df['date'] = pd.to_datetime(df['date'], format='%d/%m/%Y')
 df['RET'] = pd.to_numeric(df['RET'], errors='coerce')
 df['SICCD'] = pd.to_numeric(df['SICCD'], errors='coerce')
@@ -57,7 +56,8 @@ def classify_ff5_sector(sic_code):
         return 'Manuf'
     # HiTec
     if (3570 <= sic <= 3579) or (3660 <= sic <= 3692) or (3694 <= sic <= 3699) or \
-       (3810 <= sic <= 3829) or (7370 <= sic <= 7379) or (4800 <= sic <= 4899):
+       (3810 <= sic <= 3829) or (7370 <= sic <= 7379) or (sic == 7391) or \
+       (8730 <= sic <= 8734) or (4800 <= sic <= 4899):
         return 'HiTec'
     # Hlth
     if (2830 <= sic <= 2839) or (sic == 3693) or (3840 <= sic <= 3859) or \
