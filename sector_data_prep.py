@@ -96,10 +96,6 @@ def get_ff3_residuals(stock_data_group):
 
 df['residual'] = df.groupby('PERMNO', group_keys=False).apply(get_ff3_residuals)
 
-
-# Save datasets
-print("Saving final datasets...")
-
 # Save returns version
 df_returns = df.drop(columns=['residual'], errors='ignore').copy()
 df_returns.to_csv('cleaned_sector_stock_data_returns.csv', index=False)

@@ -1,4 +1,4 @@
-# Calculate and plot tail risk estimates.
+# Calculate and plot sector-level tail risk estimates.
 #
 # Required files: 
 #   -'cleaned_sector_stock_data_ff3residuals.csv' file created by 'sector_data_prep.py'
